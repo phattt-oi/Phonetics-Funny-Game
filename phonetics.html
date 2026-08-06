@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Plural Pronunciation Falling Ball Challenge</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&family=Nunito:wght@700&display=swap');
+
+        :root {
+            --primary: #4f46e5;
+            --success: #4ade80;
+            --danger: #ef4444;
+            --background: #f0fdf4;
+            --text-dark: #1e293b;
+            --bin-s: #fcd34d;
+            --bin-z: #60a5fa;
+            --bin-iz: #f472b6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        #app-container {
+            width: 100%;
+            max-width: 450px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        header h1 {
+            font-family: 'Comic Neue', cursive;
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.1rem;
+            padding: 0 10px;
+        }
+
+        #game-area {
+            position: relative;
+            height: 450px;
+            background: #e2e8f0;
+            overflow: hidden;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* The Flash Overlay */
+        #flash-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 20;
+            transition: opacity 0.1s;
+        }
+        .flash-green { background-color: var(--success); opacity: 0.6 !important; }
+        .flash-red { background-color: var(--danger); opacity: 0.6 !important; }
+
+        /* Falling Ball */
+        #word-ball {
+            position: absolute;
+            top: 0px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            border: 3px solid var(--text-dark);
+            border-radius: 50%;
+            width: 90px;
+            height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--text-dark);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+            z-index: 5;
+            text-align: center;
+            padding: 5px;
+            word-break: break-word;
+            line-height: 1.1;
+        }
+
+        /* Tray System */
+        #tray-container {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100px;
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        #tray {
+            display: flex;
+            width: 300%;
+            height: 100%;
+            transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateX(-33.333%); /* Start at center bin (/z/) */
+        }
+
+        .bin {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            border: 4px solid rgba(0,0,0,0.1);
+            border-bottom: none;
+        }
+
+        .bin-label {
+            font-size: 2rem;
+            font-family: 'Comic Neue', cursive;
+            color: var(--text-dark);
+            background: rgba(255,255,255,0.8);
+            padding: 2px 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        #bin-s { background-color: var(--bin-s); }
+        #bin-z { background-color: var(--bin-z); }
+        #bin-iz { background-color: var(--bin-iz); }
+
+        /* Controls */
+        #controls {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            background: white;
+            gap: 15px;
+        }
+
+        .btn-control {
+            flex: 1;
+            padding: 15px;
+            font-size: 1.5rem;
+            border: none;
+            border-radius: 12px;
+            background: var(--primary);
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #3730a3;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        
+        .btn-control:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #3730a3;
+        }
+
+        /* UI Screens */
+        .overlay-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 30;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .overlay-screen h2 {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-family: 'Comic Neue', cursive;
+        }
+
+        .overlay-screen p {
+            font-size: 1.1rem;
+            margin-bottom: 25px;
+            color: var(--text-dark);
+        }
+
+        .btn-main {
+            padding: 12px 25px;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 10px;
+            background: var(--success);
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 0 #16a34a;
+            margin-bottom: 15px;
+            width: 80%;
+            transition: transform 0.1s;
+        }
+
+        .btn-main:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        .btn-download {
+            background: var(--primary);
+            box-shadow: 0 4px 0 #3730a3;
+            font-size: 1rem;
+        }
+
+        #feedback-toast {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text-dark);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1.2rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        .instructions-bins {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .inst-bin {
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        <header>
+            <h1>Plural Pronunciation Challenge</h1>
+            <div class="stats">
+                <span>Score: <span id="score">0</span></span>
+                <span><span id="lives">❤️❤️❤️</span></span>
+            </div>
+        </header>
+
+        <div id="game-area">
+            <div id="flash-overlay"></div>
+            <div id="feedback-toast">Correct!</div>
+            
+            <div id="word-ball" style="display: none;">word</div>
+
+            <div id="tray-container">
+                <div id="tray">
+                    <div class="bin" id="bin-s"><span class="bin-label">/s/</span></div>
+                    <div class="bin" id="bin-z"><span class="bin-label">/z/</span></div>
+                    <div class="bin" id="bin-iz"><span class="bin-label">/iz/</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="controls">
+            <button class="btn-control" id="btn-left">◀ Left</button>
+            <button class="btn-control" id="btn-right">Right ▶</button>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="overlay-screen">
+            <h2>Catch the Words!</h2>
+            <p>Slide the tray left and right to catch the falling words into the correct pronunciation bin.</p>
+            
+            <div class="instructions-bins">
+                <div class="inst-bin" style="background: var(--bin-s);">/s/</div>
+                <div class="inst-bin" style="background: var(--bin-z);">/z/</div>
+                <div class="inst-bin" style="background: var(--bin-iz);">/iz/</div>
+            </div>
+            <p style="font-size: 0.9rem; color: #64748b;">English 6 - Unit 2: My House</p>
+
+            <button class="btn-main" onclick="startGame()">▶ Play Now</button>
+            <button class="btn-main btn-download" onclick="downloadGame()">📦 Download Offline Game</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over-screen" class="overlay-screen" style="display: none;">
+            <h2>Game Over!</h2>
+            <p>Your Final Score: <strong id="final-score" style="font-size: 1.5rem;">0</strong></p>
+            <button class="btn-main" onclick="startGame()">🔄 Play Again</button>
+            <button class="btn-main btn-download" onclick="downloadGame()">📦 Download Offline Game</button>
+        </div>
+    </div>
+
+    <script>
+        // Vocabulary mapping based on English 6 Global Success (Unit 2)
+        // 0 = /s/, 1 = /z/, 2 = /iz/
+        const vocabulary = [
+            // /s/
+            { w: 'lamps', b: 0 }, { w: 'sinks', b: 0 }, { w: 'toilets', b: 0 },
+            { w: 'apartments', b: 0 }, { w: 'clocks', b: 0 }, { w: 'books', b: 0 },
+            { w: 'cats', b: 0 }, { w: 'maps', b: 0 }, { w: 'hats', b: 0 },
+            // /z/
+            { w: 'beds', b: 1 }, { w: 'televisions', b: 1 }, { w: 'rooms', b: 1 },
+            { w: 'tables', b: 1 }, { w: 'chairs', b: 1 }, { w: 'pillows', b: 1 },
+            { w: 'windows', b: 1 }, { w: 'dogs', b: 1 }, { w: 'sofas', b: 1 },
+            { w: 'villas', b: 1 }, { w: 'pens', b: 1 }, { w: 'bags', b: 1 },
+            // /iz/
+            { w: 'houses', b: 2 }, { w: 'fridges', b: 2 }, { w: 'classes', b: 2 },
+            { w: 'boxes', b: 2 }, { w: 'dishes', b: 2 }, { w: 'watches', b: 2 },
+            { w: 'matches', b: 2 }, { w: 'buses', b: 2 }
+        ];
+
+        let score = 0;
+        let lives = 3;
+        let currentBin = 1; // 0 = /s/, 1 = /z/, 2 = /iz/
+        let isPlaying = false;
+        
+        let wordY = 0;
+        let baseSpeed = 1.5;
+        let currentSpeed = 1.5;
+        let activeWord = null;
+        let animationFrameId = null;
+
+        const ball = document.getElementById('word-ball');
+        const tray = document.getElementById('tray');
+        const scoreEl = document.getElementById('score');
+        const livesEl = document.getElementById('lives');
+        const flashOverlay = document.getElementById('flash-overlay');
+        const toast = document.getElementById('feedback-toast');
+
+        // Game Loop
+        function gameLoop() {
+            if (!isPlaying) return;
+
+            wordY += currentSpeed;
+            ball.style.top = wordY + 'px';
+
+            // Check collision with tray (tray is 100px high, game area is 450px)
+            // Catch area is around 350px - 380px
+            if (wordY >= 360) {
+                evaluateCatch();
+                return;
+            }
+
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function evaluateCatch() {
+            isPlaying = false; // pause briefly
+            cancelAnimationFrame(animationFrameId);
+
+            if (currentBin === activeWord.b) {
+                // Correct
+                score += 10;
+                scoreEl.innerText = score;
+                flashScreen('green');
+                
+                // Increase difficulty slightly
+                currentSpeed = baseSpeed + (Math.floor(score / 30) * 0.5);
+            } else {
+                // Incorrect
+                lives--;
+                updateLivesDisplay();
+                flashScreen('red');
+                showToast(`Ah! "${activeWord.w}" sounds like /${getBinLabel(activeWord.b)}/`);
+            }
+
+            if (lives <= 0) {
+                setTimeout(endGame, 1000);
+            } else {
+                setTimeout(spawnWord, 800);
+            }
+        }
+
+        function getBinLabel(binIndex) {
+            if(binIndex === 0) return 's';
+            if(binIndex === 1) return 'z';
+            return 'iz';
+        }
+
+        function spawnWord() {
+            // Pick a random word
+            const randomIndex = Math.floor(Math.random() * vocabulary.length);
+            activeWord = vocabulary[randomIndex];
+            
+            ball.innerText = activeWord.w;
+            wordY = -50; // Start slightly above visible area
+            ball.style.top = wordY + 'px';
+            ball.style.display = 'flex';
+            
+            isPlaying = true;
+            gameLoop();
+        }
+
+        function flashScreen(color) {
+            flashOverlay.className = color === 'green' ? 'flash-green' : 'flash-red';
+            setTimeout(() => {
+                flashOverlay.className = '';
+            }, 300);
+        }
+
+        function showToast(msg) {
+            toast.innerText = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 2000);
+        }
+
+        function updateLivesDisplay() {
+            let hearts = '';
+            for(let i=0; i<lives; i++) hearts += '❤️';
+            livesEl.innerText = hearts;
+        }
+
+        function setTrayPosition() {
+            // currentBin 0 = 0% translation
+            // currentBin 1 = -33.333% translation
+            // currentBin 2 = -66.666% translation
+            const translation = -(currentBin * 33.333);
+            tray.style.transform = `translateX(${translation}%)`;
+        }
+
+        function moveLeft() {
+            if (!isPlaying) return;
+            currentBin = Math.max(0, currentBin - 1);
+            setTrayPosition();
+        }
+
+        function moveRight() {
+            if (!isPlaying) return;
+            currentBin = Math.min(2, currentBin + 1);
+            setTrayPosition();
+        }
+
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('game-over-screen').style.display = 'none';
+            
+            score = 0;
+            lives = 3;
+            currentSpeed = baseSpeed;
+            scoreEl.innerText = score;
+            updateLivesDisplay();
+            
+            currentBin = 1; // start in middle
+            setTrayPosition();
+            
+            spawnWord();
+        }
+
+        function endGame() {
+            isPlaying = false;
+            ball.style.display = 'none';
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('game-over-screen').style.display = 'flex';
+        }
+
+        // Controls Event Listeners
+        document.getElementById('btn-left').addEventListener('pointerdown', moveLeft);
+        document.getElementById('btn-right').addEventListener('pointerdown', moveRight);
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                moveLeft();
+            } else if (e.key === 'ArrowRight') {
+                moveRight();
+            }
+        });
+
+        // Offline Download logic
+        function downloadGame() {
+            // Clone the document to create a clean offline version
+            const clone = document.documentElement.cloneNode(true);
+            
+            // Clean up game states in the downloaded file so it loads fresh
+            clone.querySelector('#start-screen').style.display = 'flex';
+            clone.querySelector('#game-over-screen').style.display = 'none';
+            clone.querySelector('#word-ball').style.display = 'none';
+            clone.querySelector('#word-ball').style.top = '0px';
+            clone.querySelector('#score').innerText = '0';
+            clone.querySelector('#lives').innerText = '❤️❤️❤️';
+            clone.querySelector('#tray').style.transform = 'translateX(-33.333%)';
+            clone.querySelector('#flash-overlay').className = '';
+            clone.querySelector('#feedback-toast').style.opacity = '0';
+
+            const htmlContent = "<!DOCTYPE html>\n" + clone.outerHTML;
+            
+            // Create a blob and trigger download
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'PhoneticsChallenge_Grade6.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
